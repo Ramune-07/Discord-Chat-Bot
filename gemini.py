@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 取り出した鍵を変数に入れます
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GEMINI")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Gemini API の設定をします

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 取り出した鍵を変数（箱）に入れます
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GROQ")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Groq（AIの脳）を使う準備をします

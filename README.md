@@ -7,9 +7,9 @@ Groq APIまたはGoogle Gemini APIを使用して、ユーザーのメッセー�
 
 | ファイル名 | 役割 |
 | :--- | :--- |
-| **`groq.py`** | **Groq API版**のボット本体です。`llama-3.3-70b-versatile` モデルを使用し、高速で自然な日本語会話を行います。 |
+| **`groq_bot.py`** | **Groq API版**のボット本体です。`llama-3.3-70b-versatile` モデルを使用し、高速で自然な日本語会話を行います。 |
 | **`gemini.py`** | **Gemini API版**のボット本体です。`gemini-flash-latest` モデルを使用します。Googleの生成AIを試したい場合はこちらを実行します。 |
-| **`.env`** | **機密情報（APIキーやトークン）を保存する場所**です。このファイルは他人に見せてはいけません（GitHub等にはアップロードしないでください）。 |
+| **`.env`** | **機密情報（APIキーやトークン）を保存する場所**です。Groq用とGemini用のDiscordトークンをそれぞれ設定します（GitHub等にはアップロードしないでください）。 |
 | **`sample.env`** | `.env` ファイルのひな形です。必要なキーの項目名だけが書かれています。配布用です。 |
 | **`requirements.txt`** | **必要なライブラリの一覧**です。`pip install -r requirements.txt` コマンドで、これらを一括インストールできます。 |
 
@@ -19,7 +19,7 @@ Groq APIまたはGoogle Gemini APIを使用して、ユーザーのメッセー�
    ```bash
    pip install -r requirements.txt
    ```
-2. `.env` ファイルを作成し（`sample.env`をコピーしてリネーム）、各APIキーを設定します。
+2. `.env` ファイルを作成し（`sample.env`をコピーしてリネーム）、`DISCORD_TOKEN_GROQ`, `DISCORD_TOKEN_GEMINI` および各APIキーを設定します。
 3. 使用したいボットのスクリプトを実行します。
-   - Groq版: `python groq.py`
+   - Groq版: `python groq_bot.py`
    - Gemini版: `python gemini.py`
