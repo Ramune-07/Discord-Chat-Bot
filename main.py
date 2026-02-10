@@ -57,6 +57,10 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # ボットへのメンションが含まれていない場合は無視します
+    if client.user not in message.mentions:
+        return
+
     # ユーザーが送ってきたメッセージを表示（確認用）
     print(f"メッセージ受信: {message.content}")
 
