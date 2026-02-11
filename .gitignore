@@ -1,1 +1,6 @@
 .env
+*.json
+history/
+data/
+cache/
+__pycache__
