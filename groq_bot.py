@@ -24,6 +24,12 @@ intents.message_content = True # 「メッセージの中身を読む許可」�
 # ボットの本体（クライアント）を作ります
 client = discord.Client(intents=intents)
 
+# --- 会話履歴の管理 ---
+# チャンネルIDをキーにして、メッセージ履歴リストを保存します
+# 形式: {channel_id: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
+channel_histories = {}
+MAX_HISTORY = 10 # 記憶する会話の往復数（これを超えると古いものから忘れます）
+
 # --- キャラクター設定 ---
 # ここを変えるとボットの性格が変わります！
 CHARACTER_SETTING = """
@@ -67,13 +73,27 @@ async def on_message(message):
     try:
         # --- Groq（AI）に返事を考えてもらう部分 ---
         
+        channel_id = message.channel.id
+        
+        # 履歴リストを取得（なければ新規作成）
+        if channel_id not in channel_histories:
+            channel_histories[channel_id] = []
+        
+        history = channel_histories[channel_id]
+
+        # ユーザーのメッセージを履歴に追加
+        # メンション部分(@botname)はAIにとってノイズになることが多いので、必要なら削除処理を入れても良いですが、
+        # ここではそのまま渡します（AIが自分への呼びかけと理解するため）。
+        history.append({"role": "user", "content": message.content})
+
+        # 履歴が長すぎたら古いものを削除（システムプロンプトは別枠なので純粋な会話履歴のみ調整）
+        if len(history) > MAX_HISTORY * 2: # 往復なので2倍
+            history = history[-(MAX_HISTORY * 2):]
+            channel_histories[channel_id] = history
+
         # AIに送る手紙の内容を作ります
-        messages_to_ai = [
-            # system: AIへの「役作り」の指示
-            {"role": "system", "content": CHARACTER_SETTING},
-            # user: ユーザーからの実際のメッセージ
-            {"role": "user", "content": message.content}
-        ]
+        # システムプロンプト + 会話履歴
+        messages_to_ai = [{"role": "system", "content": CHARACTER_SETTING}] + history
 
         # Groqに送信して、返事をもらいます
         completion = groq_client.chat.completions.create(
@@ -85,6 +105,11 @@ async def on_message(message):
 
         # AIからの返事を取り出します
         ai_response = completion.choices[0].message.content
+
+        # ボットの返事も履歴に追加
+        history.append({"role": "assistant", "content": ai_response})
+        # 更新された履歴を保存（スライシング等で参照が切れている可能性があるため念のため）
+        channel_histories[channel_id] = history
 
         # Discordのチャットに返事を書き込みます
         await message.channel.send(ai_response)
