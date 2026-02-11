@@ -13,15 +13,8 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GEMINI")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Gemini API の設定をします
+# Gemini API の設定をします
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-flash-latest") # 2.0-flashでは無料枠が使えない可能性があるため、flash-latestを使用
-
-# Discordボットの設定をします
-intents = discord.Intents.default()
-intents.message_content = True
-
-# ボットの本体を作ります
-client = discord.Client(intents=intents)
 
 # --- キャラクター設定 ---
 CHARACTER_SETTING = """
@@ -35,6 +28,23 @@ CHARACTER_SETTING = """
 - ユーザーのことをガイジだと思って話す。
 - 基本的にユーザーのことを見下している
 """
+
+# モデルの初期化（システムプロンプトを設定）
+model = genai.GenerativeModel(
+    "gemini-flash-latest",
+    system_instruction=CHARACTER_SETTING
+)
+
+# Discordボットの設定をします
+intents = discord.Intents.default()
+intents.message_content = True
+
+# ボットの本体を作ります
+client = discord.Client(intents=intents)
+
+# --- 会話履歴の管理 ---
+# チャンネルIDをキーにして、チャットセッションを保存します
+chat_sessions = {}
 
 # --- ボットの動き（イベント） ---
 
@@ -60,11 +70,15 @@ async def on_message(message):
     try:
         # --- Gemini（AI）に返事を考えてもらう部分 ---
         
-        # AIに送る指示（システムプロンプト）とメッセージを合わせます
-        prompt = f"システムの指示:\n{CHARACTER_SETTING}\n\nユーザーのメッセージ: {message.content}"
+        # チャンネルごとのセッションを取得、なければ新規作成
+        channel_id = message.channel.id
+        if channel_id not in chat_sessions:
+            chat_sessions[channel_id] = model.start_chat(history=[])
+        
+        chat = chat_sessions[channel_id]
 
-        # Gemini に送信して、返事をもらいます
-        response = model.generate_content(prompt)
+        # Gemini に送信して、返事をもらいます（履歴は自動で管理されます）
+        response = chat.send_message(message.content)
 
         # AIからの返事を取り出します
         ai_response = response.text
@@ -75,6 +89,7 @@ async def on_message(message):
     except Exception as e:
         # エラーが起きたら、ここが動きます
         print(f"エラーが発生しました: {e}")
+        # もしエラーでセッションがおかしくなった場合はリセットするなどの処理が必要かもしれません
         await message.channel.send("ごめんね、ちょっと調子が悪いみたい...💦")
 
 # --- 最後の仕上げ ---
