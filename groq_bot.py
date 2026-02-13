@@ -1,5 +1,6 @@
 # 必要な「道具箱」を取り出しています
 import os
+import json
 import discord
 from groq import Groq
 from dotenv import load_dotenv
@@ -25,31 +26,44 @@ intents.message_content = True # 「メッセージの中身を読む許可」�
 client = discord.Client(intents=intents)
 
 # --- 会話履歴の管理 ---
-# チャンネルIDをキーにして、メッセージ履歴リストを保存します
-# 形式: {channel_id: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
-channel_histories = {}
+# ユーザーIDをキーにして、メッセージ履歴リストを保存します
+# 形式: {user_id: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
+user_histories = {}
 MAX_HISTORY = 10 # 記憶する会話の往復数（これを超えると古いものから忘れます）
 
+# 履歴ファイルの保存先ディレクトリ
+HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "groq")
+
+
+def load_history(user_id):
+    """ユーザーの会話履歴をJSONファイルから読み込みます"""
+    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return []
+    return []
+
+
+def save_history(user_id, history):
+    """ユーザーの会話履歴をJSONファイルに保存します"""
+    os.makedirs(HISTORY_DIR, exist_ok=True)
+    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+
 # --- キャラクター設定 ---
-# ここを変えるとボットの性格が変わります！
-CHARACTER_SETTING = """
-あなたは「植村」という人間です。
-性格：
-- 一人称は「自分」
-- フレンドリー
-- テンションが高い
-- 煽り口調が多い
-- 徹夜が多い
-- 時々、日本語に英語を混ぜてくる
-- 変にひねくれている
-- 口癖は「なんや！？」と「何やお前」
-- 絵文字は控える
-- 第一宇宙速度で移動できる
-- 他人の筆箱を奪うことが趣味
-- 基本的にユーザーのことを見下している
-- 語尾に「やぞ」を使うことがある
-- エセ関西弁
-"""
+# characters/groq.txt からキャラクター設定を読み込みます
+CHARACTER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "characters", "groq.txt")
+try:
+    with open(CHARACTER_FILE, "r", encoding="utf-8") as f:
+        CHARACTER_SETTING = f.read()
+except FileNotFoundError:
+    print("警告: characters/groq.txt が見つかりません。デフォルト設定を使用します。")
+    CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
 # おすすめのモデル：llama-3.3-70b-versatile
 # 理由：非常に賢く、日本語が自然で、キャラクターを演じるのが上手だからです。
@@ -75,28 +89,26 @@ async def on_message(message):
         return
 
     # ユーザーが送ってきたメッセージを表示（確認用）
-    print(f"メッセージ受信: {message.content}")
+    print(f"メッセージ受信 ({message.author.name}): {message.content}")
 
     try:
         # --- Groq（AI）に返事を考えてもらう部分 ---
         
-        channel_id = message.channel.id
+        user_id = message.author.id
         
-        # 履歴リストを取得（なければ新規作成）
-        if channel_id not in channel_histories:
-            channel_histories[channel_id] = []
+        # 履歴をメモリから取得、なければファイルから読み込み
+        if user_id not in user_histories:
+            user_histories[user_id] = load_history(user_id)
         
-        history = channel_histories[channel_id]
+        history = user_histories[user_id]
 
         # ユーザーのメッセージを履歴に追加
-        # メンション部分(@botname)はAIにとってノイズになることが多いので、必要なら削除処理を入れても良いですが、
-        # ここではそのまま渡します（AIが自分への呼びかけと理解するため）。
         history.append({"role": "user", "content": message.content})
 
         # 履歴が長すぎたら古いものを削除（システムプロンプトは別枠なので純粋な会話履歴のみ調整）
         if len(history) > MAX_HISTORY * 2: # 往復なので2倍
             history = history[-(MAX_HISTORY * 2):]
-            channel_histories[channel_id] = history
+            user_histories[user_id] = history
 
         # AIに送る手紙の内容を作ります
         # システムプロンプト + 会話履歴
@@ -115,8 +127,10 @@ async def on_message(message):
 
         # ボットの返事も履歴に追加
         history.append({"role": "assistant", "content": ai_response})
-        # 更新された履歴を保存（スライシング等で参照が切れている可能性があるため念のため）
-        channel_histories[channel_id] = history
+        user_histories[user_id] = history
+
+        # 履歴をファイルに保存（永続化）
+        save_history(user_id, history)
 
         # Discordのチャットに返事を書き込みます
         await message.channel.send(ai_response)

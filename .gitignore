@@ -1,6 +1,8 @@
 .env
 *.json
 history/
+chat_history/
 data/
 cache/
 __pycache__
+characters/
