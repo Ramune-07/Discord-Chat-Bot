@@ -8,6 +8,7 @@ Groq APIまたはGoogle Gemini APIを使用して、ユーザーのメッセー�
 | ファイル名 | 役割 |
 | :--- | :--- |
 | **`groq_bot.py`** | **Groq API版**のボット本体です。`llama-3.3-70b-versatile` モデルを使用し、高速で自然な日本語会話を行います。 |
+| **`groq2_bot.py`** | **Groq API版（2号機）**のボット本体です。`groq_bot.py` と同じ構造ですが、別のキャラクター設定・Discordトークンで動作します。 |
 | **`gemini2_bot.py`** | **Gemini API版（2号機）**のボット本体です。`gemini.py` と同じ構造ですが、別のキャラクター設定・Discordトークンで動作します。 |
 | **`gemini.py`** | **Gemini API版**のボット本体です。`gemini-flash-latest` モデルを使用します。Googleの生成AIを試したい場合はこちらを実行します。 |
 | **`characters/`** | **キャラクター設定ファイル**を格納するディレクトリです。各ボットの性格をテキストファイルで管理します。 |
@@ -25,10 +26,12 @@ Groq APIまたはGoogle Gemini APIを使用して、ユーザーのメッセー�
 2. `.env` ファイルを作成し（`sample.env`をコピーしてリネーム）、各トークン・APIキーを設定します。
 3. `characters/` ディレクトリ内のテキストファイルで、各ボットの性格を設定します。
    - `characters/groq.txt` — groq_bot用
+   - `characters/groq2.txt` — groq2_bot用
    - `characters/gemini2.txt` — gemini2_bot用
    - `characters/gemini.txt` — gemini用
 4. 使用したいボットのスクリプトを実行します。
    - Groq版: `python groq_bot.py`
+   - Groq版（2号機）: `python groq2_bot.py`
    - Gemini版（2号機）: `python gemini2_bot.py`
    - Gemini版: `python gemini.py`
 
