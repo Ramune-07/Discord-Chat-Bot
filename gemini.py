@@ -91,8 +91,18 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # ボットへのメンションが含まれていない場合は無視します
-    if client.user not in message.mentions:
+    # 環境変数から特定チャンネルIDを取得
+    SPECIFIC_CHANNEL_ID = os.getenv("CHANNEL_ID_GEMINI")
+
+    # メンションされているか、または特定チャンネルでの発言かを判定
+    is_mentioned = client.user in message.mentions
+    is_specific_channel = False
+    
+    if SPECIFIC_CHANNEL_ID:
+        is_specific_channel = (str(message.channel.id) == SPECIFIC_CHANNEL_ID)
+
+    # どちらの条件も満たさない場合は無視
+    if not (is_mentioned or is_specific_channel):
         return
 
     # ユーザーが送ってきたメッセージを表示
