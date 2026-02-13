@@ -94,46 +94,48 @@ async def on_message(message):
     try:
         # --- Groq（AI）に返事を考えてもらう部分 ---
         
-        user_id = message.author.id
-        
-        # 履歴をメモリから取得、なければファイルから読み込み
-        if user_id not in user_histories:
-            user_histories[user_id] = load_history(user_id)
-        
-        history = user_histories[user_id]
+        # 「入力中...」を表示します
+        async with message.channel.typing():
+            user_id = message.author.id
+            
+            # 履歴をメモリから取得、なければファイルから読み込み
+            if user_id not in user_histories:
+                user_histories[user_id] = load_history(user_id)
+            
+            history = user_histories[user_id]
 
-        # ユーザーのメッセージを履歴に追加
-        history.append({"role": "user", "content": message.content})
+            # ユーザーのメッセージを履歴に追加（ユーザー名を付加してAIが識別できるようにする）
+            history.append({"role": "user", "content": f"[{message.author.display_name}]: {message.content}"})
 
-        # 履歴が長すぎたら古いものを削除（システムプロンプトは別枠なので純粋な会話履歴のみ調整）
-        if len(history) > MAX_HISTORY * 2: # 往復なので2倍
-            history = history[-(MAX_HISTORY * 2):]
+            # 履歴が長すぎたら古いものを削除（システムプロンプトは別枠なので純粋な会話履歴のみ調整）
+            if len(history) > MAX_HISTORY * 2: # 往復なので2倍
+                history = history[-(MAX_HISTORY * 2):]
+                user_histories[user_id] = history
+
+            # AIに送る手紙の内容を作ります
+            # システムプロンプト + 会話履歴
+            messages_to_ai = [{"role": "system", "content": CHARACTER_SETTING}] + history
+
+            # Groqに送信して、返事をもらいます
+            completion = groq_client.chat.completions.create(
+                model=AI_MODEL,
+                messages=messages_to_ai,
+                temperature=0.7, # 0.0〜1.0。高いほど創造的で変化のある返答になります
+                max_tokens=300,  # 返事の長さの上限（長すぎないように制限）
+            )
+
+            # AIからの返事を取り出します
+            ai_response = completion.choices[0].message.content
+
+            # ボットの返事も履歴に追加
+            history.append({"role": "assistant", "content": ai_response})
             user_histories[user_id] = history
 
-        # AIに送る手紙の内容を作ります
-        # システムプロンプト + 会話履歴
-        messages_to_ai = [{"role": "system", "content": CHARACTER_SETTING}] + history
+            # 履歴をファイルに保存（永続化）
+            save_history(user_id, history)
 
-        # Groqに送信して、返事をもらいます
-        completion = groq_client.chat.completions.create(
-            model=AI_MODEL,
-            messages=messages_to_ai,
-            temperature=0.7, # 0.0〜1.0。高いほど創造的で変化のある返答になります
-            max_tokens=300,  # 返事の長さの上限（長すぎないように制限）
-        )
-
-        # AIからの返事を取り出します
-        ai_response = completion.choices[0].message.content
-
-        # ボットの返事も履歴に追加
-        history.append({"role": "assistant", "content": ai_response})
-        user_histories[user_id] = history
-
-        # 履歴をファイルに保存（永続化）
-        save_history(user_id, history)
-
-        # Discordのチャットに返事を書き込みます
-        await message.channel.send(ai_response)
+            # Discordのチャットに返事を書き込みます
+            await message.channel.send(ai_response)
 
     except Exception as e:
         # エラーが起きたら、ここが動きます

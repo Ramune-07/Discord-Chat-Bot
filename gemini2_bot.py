@@ -10,20 +10,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 取り出した鍵を変数に入れます
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GEMINI")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GEMINI2")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Gemini API の設定をします
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --- キャラクター設定 ---
-# characters/gemini.txt からキャラクター設定を読み込みます
-CHARACTER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "characters", "gemini.txt")
+# characters/gemini2.txt からキャラクター設定を読み込みます
+CHARACTER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "characters", "gemini2.txt")
 try:
     with open(CHARACTER_FILE, "r", encoding="utf-8") as f:
         CHARACTER_SETTING = f.read()
 except FileNotFoundError:
-    print("警告: characters/gemini.txt が見つかりません。デフォルト設定を使用します。")
+    print("警告: characters/gemini2.txt が見つかりません。デフォルト設定を使用します。")
     CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
 # モデルの初期化（システムプロンプトを設定）
@@ -44,7 +44,7 @@ client = discord.Client(intents=intents)
 chat_sessions = {}
 
 # 履歴ファイルの保存先ディレクトリ
-HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "gemini")
+HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "gemini2")
 MAX_HISTORY = 10 # 記憶する会話の往復数
 
 
