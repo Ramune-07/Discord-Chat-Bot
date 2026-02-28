@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 取り出した鍵を変数（箱）に入れます
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GROQ")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GROQ4")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Groq（AIの脳）を使う準備をします
@@ -34,7 +34,7 @@ user_histories = {}
 MAX_HISTORY = 10 # 記憶する会話の往復数（これを超えると古いものから忘れます）
 
 # 履歴ファイルの保存先ディレクトリ
-HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "groq")
+HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "groq4")
 
 
 def load_history(user_id):
@@ -58,18 +58,16 @@ def save_history(user_id, history):
 
 
 # --- キャラクター設定 ---
-# characters/groq.txt からキャラクター設定を読み込みます
-CHARACTER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "characters", "groq.txt")
+# characters/groq2.txt からキャラクター設定を読み込みます
+CHARACTER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "characters", "groq4.txt")
 try:
     with open(CHARACTER_FILE, "r", encoding="utf-8") as f:
         CHARACTER_SETTING = f.read()
 except FileNotFoundError:
-    print("警告: characters/groq.txt が見つかりません。デフォルト設定を使用します。")
+    print("警告: characters/groq4.txt が見つかりません。デフォルト設定を使用します。")
     CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
 # おすすめのモデル：llama-3.3-70b-versatile
-# 理由：非常に賢く、日本語が自然で、キャラクターを演じるのが上手だからです。
-# しかもGroqでは高速に動きます。
 AI_MODEL = "llama-3.3-70b-versatile"
 
 # --- ボットの動き（イベント） ---
@@ -93,7 +91,7 @@ async def on_message(message):
         return
 
     # 環境変数から特定チャンネルIDを取得
-    SPECIFIC_CHANNEL_ID = os.getenv("CHANNEL_ID_GROQ")
+    SPECIFIC_CHANNEL_ID = os.getenv("CHANNEL_ID_GROQ4")
 
     # メンションされているか、または特定チャンネルでの発言かを判定
     is_mentioned = client.user in message.mentions
@@ -138,8 +136,8 @@ async def on_message(message):
             completion = groq_client.chat.completions.create(
                 model=AI_MODEL,
                 messages=messages_to_ai,
-                temperature=0.7, # 0.0〜1.0。高いほど創造的で変化のある返答になります
-                max_tokens=300,  # 返事の長さの上限（長すぎないように制限）
+                temperature=0.7,
+                max_tokens=300,
             )
 
             # AIからの返事を取り出します

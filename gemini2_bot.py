@@ -1,6 +1,7 @@
 import os
 import json
 import discord
+from discord import app_commands
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -38,6 +39,7 @@ intents.message_content = True
 
 # ボットの本体を作ります
 client = discord.Client(intents=intents)
+tree = app_commands.CommandTree(client)
 
 # --- 会話履歴の管理 ---
 # ユーザーIDをキーにして、チャットセッションを保存します
@@ -82,7 +84,13 @@ def get_gemini_history(raw_history):
 # 1. ボットが起動したときに動くコード
 @client.event
 async def on_ready():
+    await tree.sync()
     print(f'{client.user} としてログインしました！')
+
+@tree.command(name="ping", description="ボットの応答速度を確認します")
+async def ping(interaction: discord.Interaction):
+    latency = round(client.latency * 1000)
+    await interaction.response.send_message(f"Pong!\n応答速度: {latency}ms")
 
 # 2. メッセージが来たときに動くコード
 @client.event
