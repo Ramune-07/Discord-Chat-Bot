@@ -67,8 +67,8 @@ except FileNotFoundError:
     print("警告: characters/groq4.txt が見つかりません。デフォルト設定を使用します。")
     CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
-# おすすめのモデル：llama-3.3-70b-versatile
-AI_MODEL = "llama-3.3-70b-versatile"
+# OpenAIや互換APIのモデル
+AI_MODEL = "llama-3.1-8b-instant"
 
 # --- ボットの動き（イベント） ---
 
@@ -156,7 +156,7 @@ async def on_message(message):
     except Exception as e:
         # エラーが起きたら、ここが動きます
         print(f"エラーが発生しました: {e}")
-        await message.channel.send("ごめんね、ちょっと調子が悪いみたい...💦")
+        await message.channel.send(f"エラーが発生しました：\n```\n{e}\n```")
 
 # --- 最後の仕上げ ---
 # ボットを起動します

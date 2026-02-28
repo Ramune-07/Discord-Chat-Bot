@@ -156,7 +156,7 @@ async def on_message(message):
     except Exception as e:
         # エラーが起きたら、ここが動きます
         print(f"エラーが発生しました: {e}")
-        await message.channel.send("ごめんね、ちょっと調子が悪いみたい...💦")
+        await message.channel.send(f"エラーが発生しました：\n```\n{e}\n```")
 
 # --- 最後の仕上げ ---
 # ボットを起動します
