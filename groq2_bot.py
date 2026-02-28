@@ -3,7 +3,7 @@ import os
 import json
 import discord
 from discord import app_commands
-from groq import Groq
+from groq import AsyncGroq
 from dotenv import load_dotenv
 
 # --- 設定部分 ---
@@ -16,7 +16,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_GROQ2")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Groq（AIの脳）を使う準備をします
-groq_client = Groq(api_key=GROQ_API_KEY)
+groq_client = AsyncGroq(api_key=GROQ_API_KEY)
 
 # Discordボットの設定をします
 # intents（インテンツ）は「ボットがやりたいことリスト」です
@@ -133,7 +133,7 @@ async def on_message(message):
             messages_to_ai = [{"role": "system", "content": CHARACTER_SETTING}] + history
 
             # Groqに送信して、返事をもらいます
-            completion = groq_client.chat.completions.create(
+            completion = await groq_client.chat.completions.create(
                 model=AI_MODEL,
                 messages=messages_to_ai,
                 temperature=0.7,

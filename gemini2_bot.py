@@ -140,7 +140,7 @@ async def on_message(message):
             raw_history = session["raw_history"]
 
             # Gemini に送信して、返事をもらいます（ユーザー名を付加）
-            response = chat.send_message(f"[{message.author.display_name}]: {message.content}")
+            response = await chat.send_message_async(f"[{message.author.display_name}]: {message.content}")
 
             # AIからの返事を取り出します
             ai_response = response.text
