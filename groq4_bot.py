@@ -68,7 +68,7 @@ except FileNotFoundError:
     CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
 # OpenAIや互換APIのモデル
-AI_MODEL = "llama-3.1-8b-instant"
+AI_MODEL = "llama-3.3-70b-versatile"
 
 # --- ボットの動き（イベント） ---
 

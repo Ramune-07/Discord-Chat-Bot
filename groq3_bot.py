@@ -68,7 +68,7 @@ except FileNotFoundError:
     CHARACTER_SETTING = "あなたは親切なAIアシスタントです。"
 
 # おすすめのモデル：llama-3.3-70b-versatile
-AI_MODEL = "llama-3.3-70b-versatile"
+AI_MODEL = "llama-3.1-8b-instant"
 
 # --- ボットの動き（イベント） ---
 

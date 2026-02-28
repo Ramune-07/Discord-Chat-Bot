@@ -70,7 +70,7 @@ except FileNotFoundError:
 # おすすめのモデル：llama-3.3-70b-versatile
 # 理由：非常に賢く、日本語が自然で、キャラクターを演じるのが上手だからです。
 # しかもGroqでは高速に動きます。
-AI_MODEL = "llama-3.3-70b-versatile"
+AI_MODEL = "llama-3.1-8b-instant"
 
 # --- ボットの動き（イベント） ---
 
