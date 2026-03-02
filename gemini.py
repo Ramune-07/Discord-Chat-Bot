@@ -92,6 +92,18 @@ async def ping(interaction: discord.Interaction):
     latency = round(client.latency * 1000)
     await interaction.response.send_message(f"Pong!\n応答速度: {latency}ms")
 
+@tree.command(name="reset", description="会話履歴をリセットします")
+async def reset(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    # メモリ上のセッションを削除
+    if user_id in chat_sessions:
+        del chat_sessions[user_id]
+    # ファイルの履歴を削除
+    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    await interaction.response.send_message("会話履歴をリセットしました！🔄")
+
 # 2. メッセージが来たときに動くコード
 @client.event
 async def on_message(message):
