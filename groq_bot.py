@@ -28,18 +28,18 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 # --- 会話履歴の管理 ---
-# ユーザーIDをキーにして、メッセージ履歴リストを保存します
-# 形式: {user_id: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
-user_histories = {}
+# チャンネルIDをキーにして、メッセージ履歴リストを保存します（全ユーザー統合）
+# 形式: {channel_id: [{"role": "user", "content": "[ユーザー名]: ..."}, {"role": "assistant", "content": "..."}]}
+channel_histories = {}
 MAX_HISTORY = 10 # 記憶する会話の往復数（これを超えると古いものから忘れます）
 
 # 履歴ファイルの保存先ディレクトリ
 HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history", "groq")
 
 
-def load_history(user_id):
-    """ユーザーの会話履歴をJSONファイルから読み込みます"""
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+def load_history(channel_id):
+    """チャンネルの会話履歴をJSONファイルから読み込みます"""
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     if os.path.exists(filepath):
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -49,10 +49,10 @@ def load_history(user_id):
     return []
 
 
-def save_history(user_id, history):
-    """ユーザーの会話履歴をJSONファイルに保存します"""
+def save_history(channel_id, history):
+    """チャンネルの会話履歴をJSONファイルに保存します"""
     os.makedirs(HISTORY_DIR, exist_ok=True)
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
@@ -87,12 +87,12 @@ async def ping(interaction: discord.Interaction):
 
 @tree.command(name="reset", description="会話履歴をリセットします")
 async def reset(interaction: discord.Interaction):
-    user_id = interaction.user.id
+    channel_id = interaction.channel_id
     # メモリ上の履歴を削除
-    if user_id in user_histories:
-        del user_histories[user_id]
+    if channel_id in channel_histories:
+        del channel_histories[channel_id]
     # ファイルの履歴を削除
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     if os.path.exists(filepath):
         os.remove(filepath)
     await interaction.response.send_message("会話履歴をリセットしました！🔄")
@@ -126,13 +126,13 @@ async def on_message(message):
         
         # 「入力中...」を表示します
         async with message.channel.typing():
-            user_id = message.author.id
+            channel_id = message.channel.id
             
             # 履歴をメモリから取得、なければファイルから読み込み
-            if user_id not in user_histories:
-                user_histories[user_id] = load_history(user_id)
+            if channel_id not in channel_histories:
+                channel_histories[channel_id] = load_history(channel_id)
             
-            history = user_histories[user_id]
+            history = channel_histories[channel_id]
 
             # ユーザーのメッセージを履歴に追加（ユーザー名を付加してAIが識別できるようにする）
             history.append({"role": "user", "content": f"[{message.author.display_name}]: {message.content}"})
@@ -140,7 +140,7 @@ async def on_message(message):
             # 履歴が長すぎたら古いものを削除（システムプロンプトは別枠なので純粋な会話履歴のみ調整）
             if len(history) > MAX_HISTORY * 2: # 往復なので2倍
                 history = history[-(MAX_HISTORY * 2):]
-                user_histories[user_id] = history
+                channel_histories[channel_id] = history
 
             # AIに送る手紙の内容を作ります
             # システムプロンプト + 会話履歴
@@ -159,10 +159,10 @@ async def on_message(message):
 
             # ボットの返事も履歴に追加
             history.append({"role": "assistant", "content": ai_response})
-            user_histories[user_id] = history
+            channel_histories[channel_id] = history
 
             # 履歴をファイルに保存（永続化）
-            save_history(user_id, history)
+            save_history(channel_id, history)
 
             # Discordのチャットに返事を書き込みます
             await message.channel.send(ai_response)

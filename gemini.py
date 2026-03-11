@@ -42,7 +42,7 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 # --- 会話履歴の管理 ---
-# ユーザーIDをキーにして、チャットセッションを保存します
+# チャンネルIDをキーにして、チャットセッションを保存します（全ユーザー統合）
 chat_sessions = {}
 
 # 履歴ファイルの保存先ディレクトリ
@@ -50,9 +50,9 @@ HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_his
 MAX_HISTORY = 10 # 記憶する会話の往復数
 
 
-def load_history(user_id):
-    """ユーザーの会話履歴をJSONファイルから読み込みます"""
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+def load_history(channel_id):
+    """チャンネルの会話履歴をJSONファイルから読み込みます"""
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     if os.path.exists(filepath):
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -62,10 +62,10 @@ def load_history(user_id):
     return []
 
 
-def save_history(user_id, history):
-    """ユーザーの会話履歴をJSONファイルに保存します"""
+def save_history(channel_id, history):
+    """チャンネルの会話履歴をJSONファイルに保存します"""
     os.makedirs(HISTORY_DIR, exist_ok=True)
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
@@ -94,12 +94,12 @@ async def ping(interaction: discord.Interaction):
 
 @tree.command(name="reset", description="会話履歴をリセットします")
 async def reset(interaction: discord.Interaction):
-    user_id = interaction.user.id
+    channel_id = interaction.channel_id
     # メモリ上のセッションを削除
-    if user_id in chat_sessions:
-        del chat_sessions[user_id]
+    if channel_id in chat_sessions:
+        del chat_sessions[channel_id]
     # ファイルの履歴を削除
-    filepath = os.path.join(HISTORY_DIR, f"{user_id}.json")
+    filepath = os.path.join(HISTORY_DIR, f"channel_{channel_id}.json")
     if os.path.exists(filepath):
         os.remove(filepath)
     await interaction.response.send_message("会話履歴をリセットしました！🔄")
@@ -133,21 +133,21 @@ async def on_message(message):
         
         # 「入力中...」を表示します
         async with message.channel.typing():
-            user_id = message.author.id
+            channel_id = message.channel.id
 
-            # ユーザーごとのセッションを取得、なければ保存済み履歴から復元
-            if user_id not in chat_sessions:
-                saved_history = load_history(user_id)
+            # チャンネルごとのセッションを取得、なければ保存済み履歴から復元
+            if channel_id not in chat_sessions:
+                saved_history = load_history(channel_id)
                 # 履歴が長すぎたら古いものを削除
                 if len(saved_history) > MAX_HISTORY * 2:
                     saved_history = saved_history[-(MAX_HISTORY * 2):]
                 gemini_history = get_gemini_history(saved_history)
-                chat_sessions[user_id] = {
+                chat_sessions[channel_id] = {
                     "chat": model.start_chat(history=gemini_history),
                     "raw_history": saved_history
                 }
             
-            session = chat_sessions[user_id]
+            session = chat_sessions[channel_id]
             chat = session["chat"]
             raw_history = session["raw_history"]
 
@@ -157,8 +157,8 @@ async def on_message(message):
             # AIからの返事を取り出します
             ai_response = response.text
 
-            # 履歴を保存用に記録
-            raw_history.append({"role": "user", "content": message.content})
+            # 履歴を保存用に記録（ユーザー名を含めて保存）
+            raw_history.append({"role": "user", "content": f"[{message.author.display_name}]: {message.content}"})
             raw_history.append({"role": "assistant", "content": ai_response})
 
             # 履歴が長すぎたら古いものを削除
@@ -166,13 +166,13 @@ async def on_message(message):
                 raw_history = raw_history[-(MAX_HISTORY * 2):]
                 # セッションを新しい履歴で再作成
                 gemini_history = get_gemini_history(raw_history)
-                chat_sessions[user_id] = {
+                chat_sessions[channel_id] = {
                     "chat": model.start_chat(history=gemini_history),
                     "raw_history": raw_history
                 }
 
             # 履歴をファイルに保存（永続化）
-            save_history(user_id, raw_history)
+            save_history(channel_id, raw_history)
 
             # Discordのチャットに返事を書き込みます
             await message.channel.send(ai_response)
